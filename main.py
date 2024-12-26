@@ -5,24 +5,48 @@ from tkinter import filedialog
 import shutil
 
 def create_config():
+    """
+    Creates a configuration file named 'config.txt' if it does not already exist.
+    The function prompts the user to select two directories using a graphical file dialog:
+    1. A folder to save the file.
+    2. A folder to unpack the file.
+    The selected directories are written to 'config.txt'. If no folder is selected, 
+    a default path will be used (though this behavior is not explicitly defined in the function).
+    Note:
+        This function uses the 'os' and 'tkinter' modules, and requires a graphical 
+        environment to display the file dialogs.
+    """
+    
+
     if not os.path.exists("config.txt"):
         with open("config.txt", "w") as f:
             root = tk.Tk()
-            root.withdraw()  # Versteckt das Hauptfenster
+            root.withdraw()  # Hide the main window
 
-            folder_selected = filedialog.askdirectory(title="Wählen Sie einen Ordner zum Speichern der Datei aus")
+            folder_selected = filedialog.askdirectory(title="Select a folder to save the file")
             if folder_selected:
                 f.write(f"{folder_selected}\n")
             else:
-                print("Kein Ordner ausgewählt. Standardpfad wird verwendet.")
+                print("No folder selected. Default path will be used.")
             
-            folder_unpack = filedialog.askdirectory(title="Wählen Sie einen Ordner zum Speichern der Datei aus")
+            folder_unpack = filedialog.askdirectory(title="Select a folder to unpack the file")
             if folder_unpack:
                 f.write(f"{folder_unpack}\n")
             else:
-                print("Kein Ordner ausgewählt. Standardpfad wird verwendet.")
+                print("No folder selected. Default path will be used.")
 
 def get_config():
+    """
+    Reads configuration settings from a file named 'config.txt'.
+    The function opens 'config.txt' in read mode, reads its lines, and extracts
+    the first two lines as configuration settings. It strips any leading or trailing
+    whitespace from these lines and prints them to the console.
+    Returns:
+        tuple: A tuple containing two strings:
+            - save: The first line from the configuration file.
+            - unpack: The second line from the configuration file.
+    """
+    
     with open("config.txt", "r") as f:
         x = f.readlines()
         print(x)
@@ -33,56 +57,62 @@ def get_config():
         
         return save, unpack
 
-# URL der GitHub API für das neueste Release
+# URL of the GitHub API for the latest release
 repo_owner = "NeverSinkDev"
 create_config()
 folder_selected, folder_unpack = get_config()
 repo_name = "NeverSink-PoE2litefilter"
 api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
 
-# Anfrage an die API senden
+# Send request to the API
 response = requests.get(api_url)
-response.raise_for_status()  # Fehler abfangen
+response.raise_for_status()  # Catch errors
 
-# JSON-Antwort analysieren
+# Parse JSON response
 release_data = response.json()
 print(release_data)
 
-# Informationen zum neuesten Release ausgeben
-release_name = release_data.get("name", "Unbenannt")
-release_tag = release_data.get("tag_name", "Unbenannt")
-print(f"Neuestes Release: {release_name} ({release_tag})")
+# Output information about the latest release
+release_name = release_data.get("name", "Unnamed")
+release_tag = release_data.get("tag_name", "Unnamed")
+print(f"Latest release: {release_name} ({release_tag})")
 
-# Suche nach Assets
+# Search for assets
 zipball = release_data.get("zipball_url")
-print(f"ZIP-Datei: {zipball}")
+print(f"ZIP file: {zipball}")
 if not zipball:
-    print("Keine Assets im Release gefunden.")
+    print("No assets found in the release.")
     exit()
 
-# Download-URL der ZIP-Datei finden
-
-
+# Find download URL of the ZIP file
 download_url = zipball
 
-# ZIP-Datei herunterladen
+# Download ZIP file
 zip_response = requests.get(download_url, stream=True)
 zip_response.raise_for_status()
 
-# ZIP-Datei speichern
+# Save ZIP file
 zip_file_name = "NeverSink-PoE2litefilter.zip"
-print(f"Speichere Datei in '{folder_selected}/{zip_file_name}'...")
+print(f"Saving file to '{folder_selected}/{zip_file_name}'...")
 with open(f"{folder_selected}/{zip_file_name}", "wb") as f:
     for chunk in zip_response.iter_content(chunk_size=8192):
         f.write(chunk)
 
-print(f"Datei '{zip_file_name}' wurde erfolgreich heruntergeladen.")
-
-
-
-
+print(f"File '{zip_file_name}' was successfully downloaded.")
 
 def unpack_zip(unpack_folder):
+    """
+    Unpacks a ZIP file into the specified folder.
+    Args:
+        unpack_folder (str): The path to the folder where the contents of the ZIP file will be extracted.
+    Raises:
+        FileNotFoundError: If the ZIP file or the target folder does not exist.
+        zipfile.BadZipFile: If the file is not a ZIP file or it is corrupted.
+        OSError: If there is an error creating files in the target folder.
+    Example:
+        unpack_zip("/path/to/unpack/folder")
+    """
+    
     import zipfile
 
     with zipfile.ZipFile(f"{folder_selected}/{zip_file_name}", "r") as zip_ref:
@@ -95,6 +125,6 @@ def unpack_zip(unpack_folder):
             with source, target:
                 shutil.copyfileobj(source, target)
 
-    print("ZIP-Datei wurde entpackt.")
+    print("ZIP file has been unpacked.")
 
 unpack_zip(folder_unpack)
